@@ -1,0 +1,64 @@
+{
+    "name": "wolvy/wolvy-php",
+    "description": "PHP SDK for the Wolvy Developer API: secure DRM video hosting. API client, viewer-token signing, webhook verification and embed URLs. Laravel-ready.",
+    "type": "library",
+    "license": "Apache-2.0",
+    "keywords": [
+        "wolvy",
+        "drm",
+        "video",
+        "video-hosting",
+        "widevine",
+        "fairplay",
+        "playready",
+        "webhooks",
+        "laravel",
+        "sdk",
+        "api"
+    ],
+    "homepage": "https://docs.wolvy.net/",
+    "support": {
+        "docs": "https://docs.wolvy.net/",
+        "issues": "https://github.com/Wolvy-Media-Hub/Wolvy-SDK-PHP/issues",
+        "source": "https://github.com/Wolvy-Media-Hub/Wolvy-SDK-PHP"
+    },
+    "authors": [
+        {
+            "name": "MAIM For Digital Solutions",
+            "homepage": "https://wolvy.net/"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "ext-curl": "*",
+        "ext-json": "*"
+    },
+    "suggest": {
+        "illuminate/support": "To use the Laravel service provider, facade and webhook middleware (Laravel 8 or later)."
+    },
+    "autoload": {
+        "psr-4": {
+            "Wolvy\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "scripts": {
+        "test": "php tests/run.php"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Wolvy\\Laravel\\WolvyServiceProvider"
+            ],
+            "aliases": {
+                "Wolvy": "Wolvy\\Laravel\\Facades\\Wolvy"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}
