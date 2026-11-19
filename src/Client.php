@@ -56,7 +56,7 @@ use Wolvy\Model\WebhookEvent;
 class Client
 {
     /** This SDK's version, sent in the User-Agent. */
-    const VERSION = '1.0.0';
+    const VERSION = '1.0.1';
 
     const DEFAULT_BASE_URL = 'https://api.wolvy.net/v1';
 

@@ -49,7 +49,7 @@ T::run('headers', function () use ($VIDEO) {
     T::same($get['method'], 'GET', 'GET for retrieve');
     T::same($get['url'], 'https://api.wolvy.net/v1/videos/a1b2c3d4e5f60718293a', 'default base URL');
     T::same($get['headers']['Authorization'], 'Bearer wv_live_' . str_repeat('A', 32), 'Authorization: Bearer <key>');
-    T::ok(preg_match('#^wolvy-php/1\.0\.0 PHP/\d+\.\d+\.\d+#', $get['headers']['User-Agent']) === 1, 'User-Agent: wolvy-php/<version> PHP/<version>', $get['headers']['User-Agent']);
+    T::ok(preg_match('#^wolvy-php/\d+\.\d+\.\d+ PHP/\d+\.\d+\.\d+#', $get['headers']['User-Agent']) === 1, 'User-Agent: wolvy-php/<version> PHP/<version>', $get['headers']['User-Agent']);
     T::same($get['headers']['User-Agent'], 'wolvy-php/' . Client::VERSION . ' PHP/' . PHP_VERSION, 'User-Agent carries this PHP version');
     T::ok(!isset($get['headers']['Idempotency-Key']) && !isset($get['headers']['Content-Type']) && $get['body'] === null, 'a GET has no Idempotency-Key, no body, no Content-Type');
     T::same($get['options'], ['timeout' => 80.0, 'connect_timeout' => 10.0, 'ca_bundle' => null], 'default timeouts reach the transport');

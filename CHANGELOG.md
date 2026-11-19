@@ -4,6 +4,13 @@ All notable changes to `wolvy/wolvy-php`. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [semantic versioning](https://semver.org/).
 
+## 1.0.1 (2026-11-19)
+
+### Changed
+
+- Package author is now "Wolvy" (was the company's legal name). No code change; the
+  `User-Agent` reports `wolvy-php/1.0.1`.
+
 ## 1.0.0 (2026-11-19)
 
 First release, for the Wolvy Developer API v1 as of November 2026.
