@@ -13,8 +13,9 @@ class PlaybackService extends AbstractService
 {
     /**
      * POST /v1/videos/{id}/playback-tokens (scope `playback:sign`): a viewer token and the embed
-     * URL, deep link and iframe that carry it. The token is not bound to the video: it plays
-     * every video of the account until it expires.
+     * URL, deep link and iframe that carry it. By default the token is not bound to the video:
+     * it plays every video of the account until it expires. With `bind_video` true it plays only
+     * this video.
      *
      * No Idempotency-Key is sent (the docs advise against one: a replay would hand back a token
      * minted earlier, and the API would store every mint for 24 hours). Minting has no side
@@ -22,7 +23,7 @@ class PlaybackService extends AbstractService
      * `idempotency_key` in $opts only if you really want a replayable mint.
      *
      * @param array<string,mixed> $params viewer_id (required, 1-64), ttl_seconds (60-86400,
-     *        default 21600)
+     *        default 21600), bind_video (bool, default false)
      * @param array<string,mixed> $opts
      */
     public function createToken(string $videoId, array $params, array $opts = []): PlaybackToken

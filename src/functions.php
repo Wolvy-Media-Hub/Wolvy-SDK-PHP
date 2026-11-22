@@ -17,9 +17,9 @@ if (!function_exists('Wolvy\\signViewerToken')) {
      *
      * @param string|int $viewerId
      */
-    function signViewerToken($viewerId, int $ttlSeconds, string $secret, ?int $now = null): string
+    function signViewerToken($viewerId, int $ttlSeconds, string $secret, ?int $now = null, ?string $video = null): string
     {
-        return ViewerToken::sign($viewerId, $ttlSeconds, $secret, $now);
+        return ViewerToken::sign($viewerId, $ttlSeconds, $secret, $now, $video);
     }
 }
 

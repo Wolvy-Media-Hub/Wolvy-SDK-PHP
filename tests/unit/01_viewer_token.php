@@ -117,3 +117,21 @@ if (is_readable($apiMint) && PHP_VERSION_ID >= 70400) {
 } else {
     echo '  (skipped: Wolvy-APIs source not found, set WOLVY_API_VIEWER_TOKEN to compare with it)', PHP_EOL;
 }
+
+T::run('a token bound to a video (bind_video)', function () use ($SECRET, $EXP) {
+    $bound = ViewerToken::sign('user-8813', 3600, $SECRET, $EXP - 3600, 'vidA1');
+    $payload = ViewerToken::decode($bound);
+    T::same($payload['video'] ?? null, 'vidA1', 'the video claim is in the payload, after exp');
+    T::same(array_keys($payload), ['vid', 'exp', 'video'], 'claim order as the API writes it');
+    T::same(ViewerToken::verify($bound, $SECRET, $EXP - 60, 'vidA1'), 'user-8813', 'our verifier: its video');
+    T::same(ViewerToken::verify($bound, $SECRET, $EXP - 60, 'vidB2'), null, 'our verifier: another video');
+    T::same(ViewerToken::verify($bound, $SECRET, $EXP - 60), null, 'our verifier: no video given');
+    T::same(Wolvy::signViewerToken('user-8813', 3600, $SECRET, $EXP - 3600, 'vidA1'), $bound, 'Wolvy::signViewerToken takes the video too');
+    T::same(\Wolvy\signViewerToken('user-8813', 3600, $SECRET, $EXP - 3600, 'vidA1'), $bound, '\\Wolvy\\signViewerToken() too');
+    T::throws(function () use ($SECRET) { ViewerToken::sign('u', 3600, $SECRET, null, 'not a video id!'); }, InvalidArgumentException::class, 'a bad video id is refused');
+    if (substr((string) WOLVY_ORIGIN_VERIFIER, -16) === 'viewer_token.php' && (new \ReflectionFunction('verify_viewer_token'))->getNumberOfParameters() >= 3) {
+        $fresh = ViewerToken::sign('user-8813', 3600, $SECRET, null, 'vidA1');
+        T::same(verify_viewer_token($fresh, $SECRET, 'vidA1'), 'user-8813', "Wolvy's own verifier: its video");
+        T::same(verify_viewer_token($fresh, $SECRET, 'vidB2'), null, "Wolvy's own verifier: another video");
+    }
+});

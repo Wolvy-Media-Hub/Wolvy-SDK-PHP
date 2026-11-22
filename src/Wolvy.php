@@ -22,9 +22,9 @@ final class Wolvy
      * @param string     $secret     the account's viewer signing secret
      * @param int|null   $now        Unix time to sign at (tests)
      */
-    public static function signViewerToken($viewerId, int $ttlSeconds, string $secret, ?int $now = null): string
+    public static function signViewerToken($viewerId, int $ttlSeconds, string $secret, ?int $now = null, ?string $video = null): string
     {
-        return ViewerToken::sign($viewerId, $ttlSeconds, $secret, $now);
+        return ViewerToken::sign($viewerId, $ttlSeconds, $secret, $now, $video);
     }
 
     /**

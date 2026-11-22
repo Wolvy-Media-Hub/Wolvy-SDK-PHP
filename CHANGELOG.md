@@ -4,6 +4,11 @@ All notable changes to `wolvy/wolvy-php`. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [semantic versioning](https://semver.org/).
 
+## 1.1.0 (2026-11-22)
+
+- Viewer tokens can be bound to one video: `Wolvy::signViewerToken($viewerId, $ttl, $secret, null, $videoId)`, `\Wolvy\signViewerToken(...)` and `$wolvy->signViewerToken($viewerId, $ttl, $videoId)` add a `video` claim, and `playback->createToken($videoId, ['viewer_id' => …, 'bind_video' => true])` asks the API for one. Wolvy then plays that token only for that video, so a token copied out of one page cannot open the account's other videos. Without it, nothing changes.
+- `ViewerToken::verify()` takes the video id as a fourth argument and checks the claim as Wolvy does. `PlaybackToken` has `bound_to_video`.
+
 ## 1.0.1 (2026-11-19)
 
 ### Changed
