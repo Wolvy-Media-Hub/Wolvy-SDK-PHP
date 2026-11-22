@@ -4,6 +4,30 @@ All notable changes to `wolvy/wolvy-php`. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [semantic versioning](https://semver.org/).
 
+## 2.0.0 (2026-11-22)
+
+Wolvy now refuses viewer tokens that name no video, for every account. Every token is signed for
+the one video it plays, so a token copied out of one page or app cannot open the account's other
+videos.
+
+### Changed (breaking)
+
+- The video is required when signing: `Wolvy::signViewerToken($viewerId, $ttl, $secret, $videoId)`
+  and `\Wolvy\signViewerToken()` (the video comes before the optional `$now`, which is now the
+  fifth argument), `ViewerToken::sign()` and `create()` the same, and
+  `$wolvy->signViewerToken($viewerId, $ttl, $videoId)` (the lifetime has no default any more).
+  A 1.x call without a video throws instead of making a token Wolvy would refuse.
+- `ViewerToken::verify($vt, $secret, $videoId, $now = null)`: the video is the third argument and
+  required; a token that names no video, or another one, does not verify.
+- `embedUrl()` and `deepLink()` throw `InvalidArgumentException` for a token that names another
+  video, or none.
+- `playback->createToken()` no longer documents `bind_video`: the API binds every token, and
+  refuses `bind_video: false`. `PlaybackToken::$bound_to_video` is always true.
+
+### Added
+
+- `ViewerToken::videoOf($vt)`: the video a token names, read without the secret.
+
 ## 1.1.0 (2026-11-22)
 
 - Viewer tokens can be bound to one video: `Wolvy::signViewerToken($viewerId, $ttl, $secret, null, $videoId)`, `\Wolvy\signViewerToken(...)` and `$wolvy->signViewerToken($viewerId, $ttl, $videoId)` add a `video` claim, and `playback->createToken($videoId, ['viewer_id' => …, 'bind_video' => true])` asks the API for one. Wolvy then plays that token only for that video, so a token copied out of one page cannot open the account's other videos. Without it, nothing changes.

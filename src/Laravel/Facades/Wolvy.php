@@ -9,7 +9,7 @@ use Wolvy\Client;
  * The `Wolvy` facade (alias registered by package discovery) for the shared Wolvy\Client.
  *
  *     Wolvy::videos()->list(['status' => 'ready']);
- *     Wolvy::signViewerToken((string) auth()->id(), 3600);
+ *     Wolvy::signViewerToken((string) auth()->id(), 3600, $videoId);
  *     Wolvy::embedUrl($videoId, $vt);
  *
  * @method static \Wolvy\Service\HealthService            health()
@@ -28,7 +28,7 @@ use Wolvy\Client;
  * @method static \Wolvy\Service\SecurityEventsService    securityEvents()
  * @method static \Wolvy\Service\WebhookEndpointsService  webhookEndpoints()
  * @method static \Wolvy\Service\WebhookDeliveriesService webhookDeliveries()
- * @method static string signViewerToken(string|int $viewerId, int $ttlSeconds = 21600)
+ * @method static string signViewerToken(string|int $viewerId, int $ttlSeconds, string $video)
  * @method static \Wolvy\Model\WebhookEvent verifyWebhook(string $rawBody, ?string $signatureHeader, int $tolerance = 300)
  * @method static string embedUrl(string $videoId, ?string $viewerToken = null)
  * @method static int accountId()

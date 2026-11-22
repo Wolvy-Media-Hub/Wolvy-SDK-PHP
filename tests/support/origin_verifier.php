@@ -13,10 +13,10 @@ if (!function_exists('verify_viewer_token') && is_readable($origin)) {
 }
 if (!function_exists('verify_viewer_token')) {
     /**
-     * Transcription of Wolvy-Backend/viewer_token.php verify_viewer_token() as of 2026-11-19. A
-     * second opinion: do not replace it with a call into the SDK.
+     * Transcription of Wolvy-Backend/viewer_token.php verify_viewer_token() as of 2026-11-22
+     * (the "video" claim required). A second opinion: do not replace it with a call into the SDK.
      */
-    function verify_viewer_token($vt, $secret)
+    function verify_viewer_token($vt, $secret, $videoId = null)
     {
         if (!is_string($vt) || $vt === '' || !is_string($secret) || $secret === '') {
             return null;
@@ -46,10 +46,16 @@ if (!function_exists('verify_viewer_token')) {
         if ((int) $payload['exp'] - time() > $maxTtl) {
             return null;
         }
+        if (!array_key_exists('video', $payload) || !is_string($payload['video']) || $payload['video'] === '') {
+            return null;
+        }
+        if (!is_string($videoId) || $videoId === '' || !hash_equals($payload['video'], $videoId)) {
+            return null;
+        }
         $vid = (string) $payload['vid'];
         return ($vid === '') ? null : $vid;
     }
 }
 if (!defined('WOLVY_ORIGIN_VERIFIER')) {
-    define('WOLVY_ORIGIN_VERIFIER', 'pinned transcription of Wolvy-Backend/viewer_token.php (2026-11-19)');
+    define('WOLVY_ORIGIN_VERIFIER', 'pinned transcription of Wolvy-Backend/viewer_token.php (2026-11-22)');
 }

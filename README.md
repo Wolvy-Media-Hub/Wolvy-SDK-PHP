@@ -56,7 +56,7 @@ $token = $wolvy->playback->createToken($videoId, ['viewer_id' => 'user-8813', 't
 echo $token->embed_url;                                   // https://embed.wolvy.stream/…/NDI=?vt=…
 
 // …or signed locally, with no API call: the same string for the same input.
-$vt = Wolvy::signViewerToken('user-8813', 3600, getenv('WOLVY_VIEWER_SIGN_SECRET'));
+$vt = Wolvy::signViewerToken('user-8813', 3600, getenv('WOLVY_VIEWER_SIGN_SECRET'), $videoId);
 
 // 3. The embed URL for your page's iframe.
 $src = Wolvy::embedUrl($videoId, 42, $vt);                // 42 = your account id (GET /v1/account → id)
@@ -105,34 +105,34 @@ The API key is optional: without one, the helpers work and API calls throw
 
 A viewer token (`vt`) tells the player who is watching, in a form nobody can forge: it puts the
 viewer's id on the watermark and on every session record, and it is what enforcement checks.
-[Guide](https://docs.wolvy.net/viewer-tokens/).
+Each token names the one video it plays. [Guide](https://docs.wolvy.net/viewer-tokens/).
 
 ```php
 use Wolvy\Wolvy;
 
-$vt = Wolvy::signViewerToken((string) $user->id, 3600, getenv('WOLVY_VIEWER_SIGN_SECRET'));
+$videoId = 'a1b2c3d4e5f60718293a';
+$vt = Wolvy::signViewerToken((string) $user->id, 3600, getenv('WOLVY_VIEWER_SIGN_SECRET'), $videoId);
 
 // The same, as a function or on a configured client:
-$vt = \Wolvy\signViewerToken((string) $user->id, 3600, $secret);
-$vt = $wolvy->signViewerToken((string) $user->id, 3600);
-
-// Bound to one video: Wolvy plays this token for that video only.
-$vt = $wolvy->signViewerToken((string) $user->id, 3600, 'a1b2c3d4e5f60718293a');
+$vt = \Wolvy\signViewerToken((string) $user->id, 3600, $secret, $videoId);
+$vt = $wolvy->signViewerToken((string) $user->id, 3600, $videoId);
 ```
 
-- **Byte-identical to the API.** For the same viewer id, lifetime and second,
+- **One token per video.** Wolvy plays a token only for the video it names, and refuses a token
+  that names none, so a token copied out of one page cannot open your other videos. A page with
+  several players signs one token for each. `embedUrl()` and `deepLink()` refuse a token signed
+  for another video.
+- **Byte-identical to the API.** For the same viewer id, video, lifetime and second,
   `signViewerToken()` returns exactly the `vt` of `POST /v1/videos/{id}/playback-tokens`, and it
   reproduces the [published test vector](https://docs.wolvy.net/viewer-tokens/#test-vectors). It
   applies the API's rules: the viewer id is trimmed, then 1 to 64 bytes of UTF-8; the lifetime is
   60 to 86,400 seconds (anything else throws `Wolvy\Exception\InvalidArgumentException`); the JSON
   is spelled as the API spells it (PHP's default `json_encode`, which escapes `/` and non-ASCII
   characters).
-- **One token plays every video of the account** until it expires; the payload is only
-  `{vid, exp}`.
 - Sign **one fresh token per page view**, and send pages that carry one with
   `Cache-Control: private, no-store`.
 - Use the secret as shown in the dashboard; do not hex-decode it.
-- `Wolvy\ViewerToken::verify($vt, $secret)` checks a token the way Wolvy's player backend does,
+- `Wolvy\ViewerToken::verify($vt, $secret, $videoId)` checks a token the way Wolvy's player backend does,
   and `$wolvy->viewerSignSecretIsCurrent($videoId)` tells you, with one API call, whether your
   stored secret is still the account's (run it after a rotation).
 
@@ -396,7 +396,7 @@ class LessonController
 {
     public function show(Client $wolvy, string $videoId)
     {
-        $vt = $wolvy->signViewerToken((string) auth()->id(), 3600);
+        $vt = $wolvy->signViewerToken((string) auth()->id(), 3600, $videoId);
         return response()
             ->view('lesson', ['src' => $wolvy->embedUrl($videoId, $vt)])
             ->header('Cache-Control', 'private, no-store');

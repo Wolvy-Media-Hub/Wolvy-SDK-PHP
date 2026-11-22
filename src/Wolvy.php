@@ -15,16 +15,17 @@ final class Wolvy
     const VERSION = Client::VERSION;
 
     /**
-     * A signed viewer token (`vt`), byte-identical to the API's for the same input.
+     * A signed viewer token (`vt`) for one video, byte-identical to the API's for the same input.
      *
      * @param string|int $viewerId   trimmed, then 1 to 64 bytes
      * @param int        $ttlSeconds 60 to 86400
      * @param string     $secret     the account's viewer signing secret
+     * @param string     $video      the Wolvy video id the token plays (required)
      * @param int|null   $now        Unix time to sign at (tests)
      */
-    public static function signViewerToken($viewerId, int $ttlSeconds, string $secret, ?int $now = null, ?string $video = null): string
+    public static function signViewerToken($viewerId, int $ttlSeconds, string $secret, string $video, ?int $now = null): string
     {
-        return ViewerToken::sign($viewerId, $ttlSeconds, $secret, $now, $video);
+        return ViewerToken::sign($viewerId, $ttlSeconds, $secret, $video, $now);
     }
 
     /**

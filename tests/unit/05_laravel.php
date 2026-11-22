@@ -17,7 +17,7 @@ T::run('plain PHP does not need Laravel', function () {
     $root = dirname(__DIR__, 2);
     $script = 'require ' . var_export($root . '/tests/bootstrap.php', true) . ';'
         . '$c = new Wolvy\\Client("wv_live_' . str_repeat('B', 32) . '", ["viewer_sign_secret" => "s", "account_id" => 42]);'
-        . '$c->signViewerToken("u", 600); $c->embedUrl("abc"); Wolvy\\Wolvy::verifyWebhook("{\\"id\\":1,\\"type\\":\\"x\\"}", Wolvy\\Webhook::sign("{\\"id\\":1,\\"type\\":\\"x\\"}", "w"), "w");'
+        . '$c->signViewerToken("u", 600, "abc"); $c->embedUrl("abc"); Wolvy\\Wolvy::verifyWebhook("{\\"id\\":1,\\"type\\":\\"x\\"}", Wolvy\\Webhook::sign("{\\"id\\":1,\\"type\\":\\"x\\"}", "w"), "w");'
         . 'foreach (get_declared_classes() as $k) { if (stripos($k, "Illuminate") === 0 || stripos($k, "Wolvy\\\\Laravel") === 0) { echo "loaded:", $k; exit(1); } }'
         . 'echo "clean";';
     $output = shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($script) . ' 2>&1');
@@ -59,7 +59,7 @@ T::run('provider from environment variables', function () {
         T::ok($client instanceof Client, 'the container builds a Wolvy\\Client');
         T::ok($app->make(Client::class) === $client && $app->make('wolvy') === $client, 'one shared instance, also under the alias "wolvy"');
         T::same($app['config']->get('wolvy')['api_key'], $env['WOLVY_API_KEY'], 'config wolvy.api_key comes from WOLVY_API_KEY');
-        T::same(\Wolvy\ViewerToken::verify($client->signViewerToken('user-1', 600), $secret), 'user-1', 'signViewerToken() uses WOLVY_VIEWER_SIGN_SECRET');
+        T::same(\Wolvy\ViewerToken::verify($client->signViewerToken('user-1', 600, 'vidA1'), $secret, 'vidA1'), 'user-1', 'signViewerToken() uses WOLVY_VIEWER_SIGN_SECRET');
         T::same($client->embedUrl('a1b2c3d4e5f60718293a'), 'https://embed.wolvy.stream/a1b2c3d4e5f60718293a/NDI=', 'embedUrl() uses WOLVY_ACCOUNT_ID, no API call');
         $body = '{"id":"evt_1","type":"webhook.test","data":{"object":"test"}}';
         T::same($client->verifyWebhook($body, Webhook::sign($body, $env['WOLVY_WEBHOOK_SECRET']))->id, 'evt_1', 'verifyWebhook() uses WOLVY_WEBHOOK_SECRET');
@@ -67,7 +67,7 @@ T::run('provider from environment variables', function () {
         T::same($client->getBaseUrl(), 'https://api.wolvy.net/v1', 'the default base URL');
 
         \Illuminate\Support\Facades\Facade::$app = $app;
-        T::same(\Wolvy\ViewerToken::verify(WolvyFacade::signViewerToken('user-2', 600), $secret), 'user-2', 'the facade reaches the shared client');
+        T::same(\Wolvy\ViewerToken::verify(WolvyFacade::signViewerToken('user-2', 600, 'vidA1'), $secret, 'vidA1'), 'user-2', 'the facade reaches the shared client');
         T::ok(WolvyFacade::videos() instanceof \Wolvy\Service\VideosService, 'Wolvy::videos() through the facade');
 
         $middleware = new VerifyWebhookSignature($client);
@@ -99,6 +99,6 @@ T::run('makeClient() casts .env strings and skips empty values', function () {
         'base_url' => 'http://127.0.0.1:8221/v1', 'timeout' => '5', 'connect_timeout' => '2', 'max_retries' => '0', 'max_retry_delay' => '10',
     ]);
     T::same($client->getBaseUrl(), 'http://127.0.0.1:8221/v1', 'WOLVY_API_BASE is honoured');
-    T::throws(function () use ($client) { $client->signViewerToken('u'); }, \Wolvy\Exception\InvalidArgumentException::class, 'an empty secret stays unset');
+    T::throws(function () use ($client) { $client->signViewerToken('u', 600, 'vidA1'); }, \Wolvy\Exception\InvalidArgumentException::class, 'an empty secret stays unset');
     T::throws(function () use ($client) { $client->videos->list(); }, \Wolvy\Exception\InvalidArgumentException::class, 'an empty WOLVY_API_KEY: helpers only, API calls refused');
 });
