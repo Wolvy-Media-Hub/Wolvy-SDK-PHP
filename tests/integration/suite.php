@@ -174,10 +174,11 @@ T::run('create a playback token, compare with local signing', function () use ($
     foreach ([['user-8813', 3600], ['  ünï/côdé 42  ', 600], ['<b>"quoted" & \'single\'</b>', 86400], [str_repeat('x', 64), 60]] as [$viewer, $ttl]) {
         $token = $wolvy->playback->createToken($V[0], ['viewer_id' => $viewer, 'ttl_seconds' => $ttl]);
         $exp = strtotime((string) $token->expires_at);
-        $mine = Wolvy::signViewerToken($viewer, $ttl, $SECRET, $exp - $ttl);
+        $mine = Wolvy::signViewerToken($viewer, $ttl, $SECRET, $V[0], $exp - $ttl);
         $name = json_encode($viewer, JSON_UNESCAPED_UNICODE) . ", {$ttl} s";
         T::ok($token instanceof Model\PlaybackToken && $token->vt === $mine, "vt from the API === Wolvy::signViewerToken() for {$name}", $token->vt . ' vs ' . $mine);
-        T::same(verify_viewer_token($token->vt, $SECRET), trim($viewer), "the origin verifier accepts it ({$name})");
+        T::same(verify_viewer_token($token->vt, $SECRET, $V[0]), trim($viewer), "the origin verifier accepts it ({$name})");
+        T::same([$token->bound_to_video, verify_viewer_token($token->vt, $SECRET, $V[1])], [true, null], "bound to its video ({$name})");
     }
     T::ok($rec->last()['method'] === 'POST' && !isset($rec->last()['headers']['Idempotency-Key']), 'the token request carried no Idempotency-Key');
     if ($db !== null) {
@@ -188,7 +189,7 @@ T::run('create a playback token, compare with local signing', function () use ($
 
     $default = $wolvy->playback->createToken($V[1], ['viewer_id' => 'user-8813']);
     $exp = strtotime((string) $default->expires_at);
-    T::same($default->vt, Wolvy::signViewerToken('user-8813', 21600, $SECRET, $exp - 21600), 'default lifetime: 21600 s, identical too');
+    T::same($default->vt, Wolvy::signViewerToken('user-8813', 21600, $SECRET, $V[1], $exp - 21600), 'default lifetime: 21600 s, identical too');
     T::same($default->embed_url, Wolvy::embedUrl($V[1], $ACCOUNT, $default->vt), 'embed_url === Wolvy::embedUrl(video, account, vt)');
     T::same($default->deep_link, Wolvy::deepLink($V[1], $ACCOUNT, $default->vt), 'deep_link === Wolvy::deepLink()');
     T::ok(strpos((string) $default->iframe_html, htmlspecialchars($default->embed_url, ENT_QUOTES)) !== false, 'iframe_html carries the same URL');
@@ -197,7 +198,7 @@ T::run('create a playback token, compare with local signing', function () use ($
     $client = $make($fx['api_key'], ['transport' => $lossy, 'sleep' => function () {}]);
     $retried = $client->playback->createToken($V[0], ['viewer_id' => 'user-lost', 'ttl_seconds' => 600]);
     T::ok($lossy->count() === 2 && !isset($lossy->log[0]['headers']['Idempotency-Key']) && !isset($lossy->log[1]['headers']['Idempotency-Key']), 'a lost mint answer is retried without a key');
-    T::same(verify_viewer_token($retried->vt, $SECRET), 'user-lost', 'and the retried mint is a valid token');
+    T::same(verify_viewer_token($retried->vt, $SECRET, $V[0]), 'user-lost', 'and the retried mint is a valid token');
 
     $key = 'mint-' . bin2hex(random_bytes(6));
     $first = $wolvy->playback->createToken($V[0], ['viewer_id' => 'user-replay', 'ttl_seconds' => 600], ['idempotency_key' => $key]);
@@ -209,10 +210,13 @@ T::run('create a playback token, compare with local signing', function () use ($
         T::throws(function () use ($wolvy, $V, $ttl) { $wolvy->playback->createToken($V[0], ['viewer_id' => 'u', 'ttl_seconds' => $ttl]); }, InvalidRequestException::class, "the API refuses {$label} (invalid_parameter ttl_seconds)", function ($e) {
             return $e->getErrorCode() === 'invalid_parameter' && $e->getParam() === 'ttl_seconds';
         });
-        T::throws(function () use ($ttl, $SECRET) { Wolvy::signViewerToken('u', $ttl, $SECRET); }, InvalidArgumentException::class, "…and so does local signing ({$label})");
+        T::throws(function () use ($ttl, $SECRET, $V) { Wolvy::signViewerToken('u', $ttl, $SECRET, $V[0]); }, InvalidArgumentException::class, "…and so does local signing ({$label})");
     }
     T::throws(function () use ($wolvy, $V) { $wolvy->playback->createToken($V[0], ['viewer_id' => str_repeat('x', 65)]); }, InvalidRequestException::class, 'the API refuses a 65-byte viewer id…');
-    T::throws(function () use ($SECRET) { Wolvy::signViewerToken(str_repeat('x', 65), 600, $SECRET); }, InvalidArgumentException::class, '…and so does local signing');
+    T::throws(function () use ($SECRET, $V) { Wolvy::signViewerToken(str_repeat('x', 65), 600, $SECRET, $V[0]); }, InvalidArgumentException::class, '…and so does local signing');
+    T::throws(function () use ($wolvy, $V) { $wolvy->playback->createToken($V[0], ['viewer_id' => 'u', 'bind_video' => false]); }, InvalidRequestException::class, 'the API refuses bind_video: false (every token is bound)', function ($e) {
+        return $e->getErrorCode() === 'invalid_parameter' && $e->getParam() === 'bind_video';
+    });
 });
 
 T::run('embed URLs and the stored secret', function () use ($wolvy, $make, $fx, $V, $ACCOUNT, $SECRET) {

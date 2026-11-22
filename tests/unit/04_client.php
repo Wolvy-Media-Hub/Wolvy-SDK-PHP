@@ -281,9 +281,9 @@ T::run('options and configuration', function () {
     $c = new Client(null, ['transport' => new FakeTransport()]);
     T::throws(function () use ($c) { $c->videos->list(); }, InvalidArgumentException::class, 'without an API key, API calls say so');
     $c = new Client('', ['viewer_sign_secret' => 'd80d15d09b7c0e56b4d787f6a212ed8bf8d53c761b6df521278f030cb12a7781', 'account_id' => '42']);
-    T::ok(\Wolvy\ViewerToken::verify($c->signViewerToken('user-8813', 600), 'd80d15d09b7c0e56b4d787f6a212ed8bf8d53c761b6df521278f030cb12a7781') === 'user-8813', 'helpers work without an API key (an empty one, as from an unset env var)');
+    T::ok(\Wolvy\ViewerToken::verify($c->signViewerToken('user-8813', 600, 'vidA1'), 'd80d15d09b7c0e56b4d787f6a212ed8bf8d53c761b6df521278f030cb12a7781', 'vidA1') === 'user-8813', 'helpers work without an API key (an empty one, as from an unset env var)');
     T::same($c->embedUrl('a1b2c3d4e5f60718293a'), 'https://embed.wolvy.stream/a1b2c3d4e5f60718293a/NDI=', '$client->embedUrl() with the account_id option, no API call');
-    T::throws(function () { (new Client('k'))->signViewerToken('u'); }, InvalidArgumentException::class, 'signViewerToken() without viewer_sign_secret is refused');
+    T::throws(function () { (new Client('k'))->signViewerToken('u', 600, 'vidA1'); }, InvalidArgumentException::class, 'signViewerToken() without viewer_sign_secret is refused');
     T::throws(function () { (new Client('k'))->verifyWebhook('{}', 't=1,v1=a'); }, InvalidArgumentException::class, 'verifyWebhook() without webhook_secret is refused');
     T::ok((new Client('k'))->videos() instanceof \Wolvy\Service\VideosService, '$client->videos() equals $client->videos (for the facade)');
     T::throws(function () { (new Client('k'))->nope; }, LogicException::class, 'an unknown service is an error');
@@ -294,7 +294,7 @@ T::run('options and configuration', function () {
     $c->embedUrl('vid2');
     T::same(count($t->requests), 1, '…once per client');
 
-    $t = new FakeTransport(FakeTransport::json(201, ['object' => 'playback_token', 'vt' => \Wolvy\Wolvy::signViewerToken('secret-check', 60, 'right-secret')]), FakeTransport::json(201, ['object' => 'playback_token', 'vt' => \Wolvy\Wolvy::signViewerToken('secret-check', 60, 'right-secret')]));
+    $t = new FakeTransport(FakeTransport::json(201, ['object' => 'playback_token', 'vt' => \Wolvy\Wolvy::signViewerToken('secret-check', 60, 'right-secret', 'v')]), FakeTransport::json(201, ['object' => 'playback_token', 'vt' => \Wolvy\Wolvy::signViewerToken('secret-check', 60, 'right-secret', 'v')]));
     T::ok(fake_client($t, $s, ['viewer_sign_secret' => 'right-secret'])->viewerSignSecretIsCurrent('v'), 'viewerSignSecretIsCurrent(): true with the account\'s secret');
     T::ok(!fake_client($t, $s, ['viewer_sign_secret' => 'old-secret'])->viewerSignSecretIsCurrent('v'), 'viewerSignSecretIsCurrent(): false after a rotation');
 });

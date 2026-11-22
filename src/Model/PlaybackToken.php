@@ -12,8 +12,8 @@ use Wolvy\WolvyObject;
  * @property-read string $object "playback_token"
  * @property-read string $video_id
  * @property-read string $viewer_id
- * @property-read bool $bound_to_video True when minted with bind_video: the token plays only this video.
- * @property-read string $vt The viewer token; byte-identical to Wolvy::signViewerToken() for the same viewer, lifetime and second.
+ * @property-read bool $bound_to_video Always true: the token plays only this video.
+ * @property-read string $vt The viewer token; byte-identical to Wolvy::signViewerToken() for the same viewer, video, lifetime and second.
  * @property-read string $expires_at RFC 3339.
  * @property-read string $embed_url The embed URL with ?vt=.
  * @property-read string $deep_link wolvy://play/{video}/{base64 account}/{vt} for the Wolvy Player app.

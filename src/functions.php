@@ -13,13 +13,13 @@ use Wolvy\Model\WebhookEvent;
 
 if (!function_exists('Wolvy\\signViewerToken')) {
     /**
-     * A signed viewer token, byte-identical to the API's. See ViewerToken::sign().
+     * A signed viewer token for one video, byte-identical to the API's. See ViewerToken::sign().
      *
      * @param string|int $viewerId
      */
-    function signViewerToken($viewerId, int $ttlSeconds, string $secret, ?int $now = null, ?string $video = null): string
+    function signViewerToken($viewerId, int $ttlSeconds, string $secret, string $video, ?int $now = null): string
     {
-        return ViewerToken::sign($viewerId, $ttlSeconds, $secret, $now, $video);
+        return ViewerToken::sign($viewerId, $ttlSeconds, $secret, $video, $now);
     }
 }
 

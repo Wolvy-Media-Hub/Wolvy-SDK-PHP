@@ -11,7 +11,7 @@ use Wolvy\Client;
  * composer.json `extra.laravel`. Plain PHP never loads this class, so Laravel is not required.
  *
  *     public function show(\Wolvy\Client $wolvy) { … }      // injected
- *     \Wolvy::signViewerToken((string) auth()->id(), 3600); // facade
+ *     \Wolvy::signViewerToken((string) auth()->id(), 3600, $videoId); // facade
  */
 class WolvyServiceProvider extends ServiceProvider
 {

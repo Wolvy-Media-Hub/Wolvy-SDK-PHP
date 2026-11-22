@@ -11,7 +11,7 @@ use Wolvy\Wolvy;
 T::section('Embed URLs');
 
 $VIDEO = 'a1b2c3d4e5f60718293a';
-$VT = 'eyJ2aWQiOiJ1c2VyLTg4MTMiLCJleHAiOjE3OTAwMDAwMDB9.XBNWyMiuLw0y7WlQkzO5s2N-eI8Ltxhs4N0uvDHM4ZM';
+$VT = 'eyJ2aWQiOiJ1c2VyLTg4MTMiLCJleHAiOjE3OTAwMDAwMDAsInZpZGVvIjoiYTFiMmMzZDRlNWY2MDcxODI5M2EifQ.KPYNjR-agijPtfv9s1VbBOSs_QJmi3NMlQ7tsUXCY9M'; // signed for $VIDEO
 
 T::run('the documented URL', function () use ($VIDEO, $VT) {
     T::same(Wolvy::embedUrl($VIDEO, 42), 'https://embed.wolvy.stream/a1b2c3d4e5f60718293a/NDI=', 'unsigned: account 42 is NDI=');
@@ -27,6 +27,16 @@ T::run('the documented URL', function () use ($VIDEO, $VT) {
 T::run('deep link', function () use ($VIDEO, $VT) {
     T::same(Wolvy::deepLink($VIDEO, 42, $VT), 'wolvy://play/a1b2c3d4e5f60718293a/NDI=/' . $VT, 'wolvy://play/{video}/{base64 account}/{vt}');
     T::throws(function () use ($VIDEO) { Wolvy::deepLink($VIDEO, 42, ''); }, InvalidArgumentException::class, 'a deep link needs a token');
+});
+
+T::run('a token must be signed for the same video', function () use ($VIDEO, $VT) {
+    $other = Wolvy::signViewerToken('user-8813', 600, 's', 'vidB2');
+    T::throws(function () use ($VIDEO, $other) { Wolvy::embedUrl($VIDEO, 42, $other); }, InvalidArgumentException::class, 'embedUrl(): a token for another video is refused');
+    T::throws(function () use ($VIDEO, $other) { Wolvy::deepLink($VIDEO, 42, $other); }, InvalidArgumentException::class, 'deepLink(): a token for another video is refused');
+    $unbound = 'eyJ2aWQiOiJ1c2VyLTg4MTMiLCJleHAiOjE3OTAwMDAwMDB9.XBNWyMiuLw0y7WlQkzO5s2N-eI8Ltxhs4N0uvDHM4ZM'; // the 1.x test vector
+    T::throws(function () use ($VIDEO, $unbound) { Wolvy::embedUrl($VIDEO, 42, $unbound); }, InvalidArgumentException::class, 'embedUrl(): a token that names no video is refused');
+    T::throws(function () use ($VIDEO, $unbound) { Wolvy::deepLink($VIDEO, 42, $unbound); }, InvalidArgumentException::class, 'deepLink(): a token that names no video is refused');
+    T::ok(is_string(Wolvy::embedUrl($VIDEO, 42, $VT)), 'its own video is fine');
 });
 
 T::run('bad input', function () use ($VIDEO) {

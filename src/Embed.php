@@ -10,7 +10,9 @@ use Wolvy\Exception\InvalidArgumentException;
  *     https://embed.wolvy.stream/{video id}/{base64(account id)}[?vt={viewer token}]
  *     wolvy://play/{video id}/{base64(account id)}/{viewer token}
  *
- * The same strings the API returns as `embed_url` and `deep_link`.
+ * The same strings the API returns as `embed_url` and `deep_link`. A token must be signed for
+ * the same video (it names it); one that names another video, or none, is refused here, as
+ * Wolvy would refuse it at playback.
  */
 final class Embed
 {
@@ -19,7 +21,7 @@ final class Embed
     /**
      * @param string          $videoId     the video id (`id` of a video)
      * @param int|string      $accountId   the account id (`id` of GET /v1/account), e.g. 42
-     * @param string|null     $viewerToken a signed viewer token; null for an unsigned URL
+     * @param string|null     $viewerToken a viewer token signed for this video; null for an unsigned URL
      * @param string          $baseUrl     the player host
      *
      * @throws InvalidArgumentException
@@ -28,6 +30,7 @@ final class Embed
     {
         $url = rtrim($baseUrl, '/') . '/' . self::videoId($videoId) . '/' . self::account($accountId);
         if ($viewerToken !== null && $viewerToken !== '') {
+            self::tokenFor($viewerToken, $videoId);
             $url .= '?vt=' . rawurlencode($viewerToken);
         }
         return $url;
@@ -44,7 +47,28 @@ final class Embed
         if ($viewerToken === '') {
             throw new InvalidArgumentException('A deep link needs a viewer token.');
         }
+        self::tokenFor($viewerToken, self::videoId($videoId));
         return 'wolvy://play/' . self::videoId($videoId) . '/' . self::account($accountId) . '/' . $viewerToken;
+    }
+
+    /**
+     * Refuses a token that names another video, or none: Wolvy would refuse it at playback. Read
+     * without the secret (the player's backend checks the signature).
+     *
+     * @throws InvalidArgumentException
+     */
+    private static function tokenFor(string $viewerToken, string $videoId): void
+    {
+        if (ViewerToken::decode($viewerToken) === null) {
+            return; // not a token this SDK can read; Wolvy decides
+        }
+        $named = ViewerToken::videoOf($viewerToken);
+        if ($named === null) {
+            throw new InvalidArgumentException('This viewer token names no video, and Wolvy refuses such tokens. Sign it for ' . $videoId . '.');
+        }
+        if ($named !== $videoId) {
+            throw new InvalidArgumentException('This viewer token is for video ' . $named . ', not ' . $videoId . '. Sign one token per video.');
+        }
     }
 
     /** base64 of the account id written in decimal: 42 → "NDI=". */
