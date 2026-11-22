@@ -56,7 +56,7 @@ use Wolvy\Model\WebhookEvent;
 class Client
 {
     /** This SDK's version, sent in the User-Agent. */
-    const VERSION = '1.0.1';
+    const VERSION = '1.1.0';
 
     const DEFAULT_BASE_URL = 'https://api.wolvy.net/v1';
 
@@ -269,9 +269,9 @@ class Client
      * @param string|int $viewerId
      * @throws InvalidArgumentException when no secret is configured
      */
-    public function signViewerToken($viewerId, int $ttlSeconds = ViewerToken::DEFAULT_TTL): string
+    public function signViewerToken($viewerId, int $ttlSeconds = ViewerToken::DEFAULT_TTL, ?string $video = null): string
     {
-        return ViewerToken::sign($viewerId, $ttlSeconds, $this->requireOption('viewer_sign_secret'));
+        return ViewerToken::sign($viewerId, $ttlSeconds, $this->requireOption('viewer_sign_secret'), null, $video);
     }
 
     /**

@@ -44,10 +44,12 @@ final class ViewerToken
      * @param int|null   $now        Unix time to sign at (tests); default time()
      *
      * @throws InvalidArgumentException
+     * @param string|null $video  a Wolvy video id: the token then plays only that video (the API's
+     *                           bind_video). Default null: any video of the account.
      */
-    public static function sign($viewerId, int $ttlSeconds, string $secret, ?int $now = null): string
+    public static function sign($viewerId, int $ttlSeconds, string $secret, ?int $now = null, ?string $video = null): string
     {
-        return self::create($viewerId, $ttlSeconds, $secret, $now)['vt'];
+        return self::create($viewerId, $ttlSeconds, $secret, $now, $video)['vt'];
     }
 
     /**
@@ -58,9 +60,12 @@ final class ViewerToken
      *
      * @throws InvalidArgumentException
      */
-    public static function create($viewerId, int $ttlSeconds, string $secret, ?int $now = null): array
+    public static function create($viewerId, int $ttlSeconds, string $secret, ?int $now = null, ?string $video = null): array
     {
         $vid = self::normaliseViewerId($viewerId);
+        if ($video !== null && preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $video) !== 1) {
+            throw new InvalidArgumentException('The video must be a Wolvy video id: 1 to 64 letters, digits, "-" or "_".');
+        }
 
         if ($ttlSeconds < self::MIN_TTL || $ttlSeconds > self::MAX_TTL) {
             throw new InvalidArgumentException(sprintf(
@@ -76,14 +81,19 @@ final class ViewerToken
 
         $exp = ($now !== null ? $now : time()) + $ttlSeconds;
         // Default flags on purpose: the API signs json_encode(['vid' => …, 'exp' => …]) without any.
-        $json = json_encode(['vid' => $vid, 'exp' => $exp]);
+        // With a video, the API's bind_video adds "video" after "exp", the same way.
+        $claims = ['vid' => $vid, 'exp' => $exp];
+        if ($video !== null) {
+            $claims['video'] = $video;
+        }
+        $json = json_encode($claims);
         if (!is_string($json)) {
             throw new InvalidArgumentException('The viewer id could not be encoded as JSON.');
         }
         $payload = self::base64url($json);
         $sig = self::base64url(hash_hmac('sha256', $payload, $secret, true));
 
-        return ['vt' => $payload . '.' . $sig, 'expires_at' => $exp, 'viewer_id' => $vid];
+        return ['vt' => $payload . '.' . $sig, 'expires_at' => $exp, 'viewer_id' => $vid, 'video' => $video];
     }
 
     /**
@@ -91,7 +101,7 @@ final class ViewerToken
      * 30 days ahead). Returns the viewer id, or null when the token is not valid. Useful in
      * tests, and to check that a stored secret is still the account's.
      */
-    public static function verify(?string $vt, ?string $secret, ?int $now = null): ?string
+    public static function verify(?string $vt, ?string $secret, ?int $now = null, ?string $videoId = null): ?string
     {
         if ($vt === null || $vt === '' || $secret === null || $secret === '') {
             return null;
@@ -115,6 +125,11 @@ final class ViewerToken
         $now = $now !== null ? $now : time();
         $exp = (int) $payload['exp'];
         if ($now > $exp || $exp - $now > self::VERIFY_MAX_TTL) {
+            return null;
+        }
+        // A token bound to a video verifies only for that video, as at playback.
+        if (array_key_exists('video', $payload)
+            && (!is_string($payload['video']) || $videoId === null || !hash_equals($payload['video'], $videoId))) {
             return null;
         }
         $vid = (string) $payload['vid'];

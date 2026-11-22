@@ -115,6 +115,9 @@ $vt = Wolvy::signViewerToken((string) $user->id, 3600, getenv('WOLVY_VIEWER_SIGN
 // The same, as a function or on a configured client:
 $vt = \Wolvy\signViewerToken((string) $user->id, 3600, $secret);
 $vt = $wolvy->signViewerToken((string) $user->id, 3600);
+
+// Bound to one video: Wolvy plays this token for that video only.
+$vt = $wolvy->signViewerToken((string) $user->id, 3600, 'a1b2c3d4e5f60718293a');
 ```
 
 - **Byte-identical to the API.** For the same viewer id, lifetime and second,
